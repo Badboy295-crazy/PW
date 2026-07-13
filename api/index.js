@@ -27,15 +27,7 @@ module.exports = async function handler(req, res) {
   const headers = {};
   for (const [key, value] of Object.entries(req.headers)) {
     const lk = key.toLowerCase();
-    if (
-      lk !== 'host' &&
-      lk !== 'connection' &&
-      lk !== 'content-length' &&
-      !lk.startsWith('x-forwarded-') &&
-      !lk.startsWith('x-vercel-') &&
-      lk !== 'forwarded' &&
-      lk !== 'via'
-    ) {
+    if (lk !== 'host' && lk !== 'connection' && lk !== 'content-length') {
       headers[key] = value;
     }
   }
