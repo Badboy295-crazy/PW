@@ -1,0 +1,9 @@
+{
+  "name": "pwthor-mirror",
+  "version": "1.0.0",
+  "description": "PWThor Mirror Proxy",
+  "main": "api/index.js",
+  "dependencies": {
+    "node-fetch": "^2.7.0"
+  }
+}

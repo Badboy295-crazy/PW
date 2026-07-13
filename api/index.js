@@ -1,0 +1,177 @@
+const https = require('https');
+const url = require('url');
+
+// ── Origin IP Bypass ─────────────────────────────────────────────────────────
+// Cloudflare Turnstile only runs on Cloudflare's EDGE, NOT on the origin server.
+// Direct connection to AWS origin (75.2.60.68) bypasses Cloudflare completely.
+const ORIGIN_IP = '75.2.60.68';
+const ORIGIN_HOST = 'deltastudy.site';
+const ORIGIN_PORT = 443;
+
+const originAgent = new https.Agent({
+  rejectUnauthorized: false,
+  keepAlive: true,
+});
+
+// In-memory cache to avoid KV latency on every request
+let cachedCookies = null;
+let cachedAdminIp = null;
+let lastFetchTime = 0;
+const CACHE_TTL = 3 * 60 * 1000; // 3 minutes cache
+
+module.exports = async function handler(req, res) {
+  const parsedUrl = url.parse(req.url, true);
+  const pathname = parsedUrl.pathname;
+
+  // ── Build forwarded headers ──────────────────────────────────────────────
+  const headers = {};
+  for (const [key, value] of Object.entries(req.headers)) {
+    const lk = key.toLowerCase();
+    if (
+      lk !== 'host' &&
+      lk !== 'connection' &&
+      lk !== 'content-length' &&
+      !lk.startsWith('x-forwarded-') &&
+      !lk.startsWith('x-vercel-') &&
+      lk !== 'forwarded' &&
+      lk !== 'via'
+    ) {
+      headers[key] = value;
+    }
+  }
+
+  // Override host + referer so origin thinks request came from deltastudy itself
+  headers['host']    = ORIGIN_HOST;
+  headers['referer'] = `https://${ORIGIN_HOST}/`;
+  headers['origin']  = `https://${ORIGIN_HOST}`;
+
+  // ── Read cookies and admin IP from Upstash KV ────────────────────────────
+  const kvUrl   = process.env.KV_REST_API_URL   || process.env.UPSTASH_REDIS_REST_URL;
+  const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  let cookies = "";
+  let adminIp = "";
+
+  if (kvUrl && kvToken) {
+    const now = Date.now();
+    if (cachedCookies && (now - lastFetchTime < CACHE_TTL)) {
+      cookies = cachedCookies;
+      adminIp = cachedAdminIp;
+    } else {
+      try {
+        // Read cookies from the shared "pi_cookies" key (covers deltastudy.site domain)
+        const kvRes = await fetch(`${kvUrl}/get/pi_cookies`, {
+          headers: { Authorization: `Bearer ${kvToken}` },
+        });
+        if (kvRes.ok) {
+          const kvData = await kvRes.json();
+          if (kvData.result) {
+            const obj = JSON.parse(kvData.result);
+            cachedCookies = obj?.cookies || "";
+            cachedAdminIp = obj?.adminIp || "";
+            lastFetchTime = now;
+            cookies = cachedCookies;
+            adminIp = cachedAdminIp;
+          }
+        }
+      } catch (e) {
+        console.error('KV read error:', e.message);
+        cookies = cachedCookies || "";
+        adminIp = cachedAdminIp || "";
+      }
+    }
+  }
+
+  if (cookies) {
+    headers['cookie'] = cookies;
+  }
+
+  if (adminIp && adminIp !== 'origin-bypass') {
+    headers['x-forwarded-for'] = adminIp;
+    headers['x-real-ip']       = adminIp;
+    headers['true-client-ip']  = adminIp;
+  }
+
+  // ── Read request body if needed ──────────────────────────────────────────
+  let bodyBuffer = null;
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    bodyBuffer = await getBodyBuffer(req);
+    if (bodyBuffer.length > 0) {
+      headers['content-length'] = String(bodyBuffer.length);
+    }
+  }
+
+  // ── Proxy via DIRECT origin IP (bypasses Cloudflare) ────────────────────
+  try {
+    const proxyBody = await new Promise((resolve, reject) => {
+      const reqOptions = {
+        hostname:            ORIGIN_IP,
+        port:                ORIGIN_PORT,
+        path:                req.url,
+        method:              req.method,
+        headers:             headers,
+        servername:          ORIGIN_HOST,    // SNI for TLS handshake
+        agent:               originAgent,
+        rejectUnauthorized:  false,
+      };
+
+      const proxyReq = https.request(reqOptions, (proxyRes) => {
+        // Forward response status
+        res.status(proxyRes.statusCode);
+
+        const isStaticOrPlay =
+          pathname.startsWith('/play') ||
+          pathname.endsWith('.ts')     ||
+          pathname.endsWith('.m3u8')   ||
+          pathname.endsWith('.mp4')    ||
+          pathname.startsWith('/_next/') ||
+          pathname.startsWith('/static/');
+
+        // Forward response headers
+        for (const [key, value] of Object.entries(proxyRes.headers)) {
+          const lk = key.toLowerCase();
+          if (lk === 'transfer-encoding' || lk === 'connection') continue;
+          if (lk === 'location') {
+            res.setHeader(key, value.replace(`https://${ORIGIN_HOST}`, ''));
+          } else if (lk === 'cache-control' && isStaticOrPlay) {
+            res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=3600');
+          } else {
+            res.setHeader(key, value);
+          }
+        }
+
+        if (isStaticOrPlay && !res.getHeader('Cache-Control')) {
+          res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=3600');
+        }
+
+        // Collect response body
+        const chunks = [];
+        proxyRes.on('data', (c) => chunks.push(c));
+        proxyRes.on('end',  ()  => resolve(Buffer.concat(chunks)));
+        proxyRes.on('error', reject);
+      });
+
+      proxyReq.on('error', reject);
+
+      if (bodyBuffer && bodyBuffer.length > 0) {
+        proxyReq.write(bodyBuffer);
+      }
+      proxyReq.end();
+    });
+
+    res.send(proxyBody);
+
+  } catch (e) {
+    console.error('Proxy fetch error:', e.message);
+    res.status(502).send('Proxy error: ' + e.message);
+  }
+};
+
+function getBodyBuffer(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on('data',  (c)   => chunks.push(c));
+    req.on('end',   ()    => resolve(Buffer.concat(chunks)));
+    req.on('error', (err) => reject(err));
+  });
+}

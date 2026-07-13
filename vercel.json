@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/cron-solve",
+      "destination": "/api/cron-solve.js"
+    },
+    {
+      "source": "/api/get-tokens",
+      "destination": "/api/get-tokens.js"
+    },
+    {
+      "source": "/api/save-tokens",
+      "destination": "/api/save-tokens.js"
+    },
+    {
+      "source": "/verify",
+      "destination": "/verify.html"
+    },
+    {
+      "source": "/_next/:path*",
+      "destination": "https://pwthor.live/_next/:path*"
+    },
+    {
+      "source": "/static/:path*",
+      "destination": "https://pwthor.live/static/:path*"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "https://pwthor.live/favicon.ico"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/api/index.js"
+    }
+  ]
+}

