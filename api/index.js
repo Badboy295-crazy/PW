@@ -8,6 +8,10 @@ const ORIGIN_IP = '75.2.60.68';
 const ORIGIN_HOST = 'deltastudy.site';
 const ORIGIN_PORT = 443;
 
+// API Subdomain configuration
+const API_IP = '75.2.97.79';
+const API_HOST = 'apiserver.deltastudy.site';
+
 const originAgent = new https.Agent({
   rejectUnauthorized: false,
   keepAlive: true,
@@ -38,17 +42,35 @@ module.exports = async function handler(req, res) {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
 
+  // ── Determine Target ─────────────────────────────────────────────────────
+  let isApiServer = false;
+  let targetPath = req.url;
+  let targetHost = ORIGIN_HOST;
+  let targetIp = ORIGIN_IP;
+
+  if (pathname.startsWith('/apiserver/')) {
+    isApiServer = true;
+    targetPath = req.url.replace(/^\/apiserver/, '');
+    targetHost = API_HOST;
+    targetIp = API_IP;
+  }
+
   // ── Build forwarded headers ──────────────────────────────────────────────
   const headers = {};
   for (const [key, value] of Object.entries(req.headers)) {
     const lk = key.toLowerCase();
-    if (lk !== 'host' && lk !== 'connection' && lk !== 'content-length') {
+    if (
+      lk !== 'host' &&
+      lk !== 'connection' &&
+      lk !== 'content-length' &&
+      lk !== 'accept-encoding' // Strip to prevent compressed responses for string replacement
+    ) {
       headers[key] = value;
     }
   }
 
   // Override host + referer so origin thinks request came from deltastudy itself
-  headers['host']    = ORIGIN_HOST;
+  headers['host']    = targetHost;
   headers['referer'] = `https://${ORIGIN_HOST}/`;
   headers['origin']  = `https://${ORIGIN_HOST}`;
 
@@ -112,12 +134,12 @@ module.exports = async function handler(req, res) {
   try {
     const proxyBody = await new Promise((resolve, reject) => {
       const reqOptions = {
-        hostname:            ORIGIN_IP,
+        hostname:            targetIp,
         port:                ORIGIN_PORT,
-        path:                req.url,
+        path:                targetPath,
         method:              req.method,
         headers:             headers,
-        servername:          ORIGIN_HOST,    // SNI for TLS handshake
+        servername:          targetHost,    // SNI for TLS handshake
         agent:               originAgent,
         rejectUnauthorized:  false,
       };
@@ -146,7 +168,7 @@ module.exports = async function handler(req, res) {
             lk === 'access-control-allow-headers'
           ) continue;
           if (lk === 'location') {
-            res.setHeader(key, value.replace(`https://${ORIGIN_HOST}`, ''));
+            res.setHeader(key, value.replace(`https://${targetHost}`, ''));
           } else if (lk === 'cache-control' && isStaticOrPlay) {
             res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=3600');
           } else {
@@ -173,7 +195,24 @@ module.exports = async function handler(req, res) {
       proxyReq.end();
     });
 
-    res.send(proxyBody);
+    // ── HTML/JS String Replacements to proxy API subdomain ──────────────────
+    const contentType = res.getHeader('content-type') || '';
+    if (
+      contentType.includes('text/html') ||
+      contentType.includes('application/javascript') ||
+      contentType.includes('application/json')
+    ) {
+      const currentHost = req.headers.host || '';
+      let bodyText = proxyBody.toString('utf8');
+
+      // Replace apiserver.deltastudy.site domain with our proxied /apiserver path
+      bodyText = bodyText.replaceAll('https://apiserver.deltastudy.site', `https://${currentHost}/apiserver`);
+      bodyText = bodyText.replaceAll('http://apiserver.deltastudy.site', `http://${currentHost}/apiserver`);
+
+      res.send(Buffer.from(bodyText, 'utf8'));
+    } else {
+      res.send(proxyBody);
+    }
 
   } catch (e) {
     console.error('Proxy fetch error:', e.message);
