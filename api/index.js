@@ -20,6 +20,21 @@ let lastFetchTime = 0;
 const CACHE_TTL = 3 * 60 * 1000; // 3 minutes cache
 
 module.exports = async function handler(req, res) {
+  // ── CORS Headers Setup ────────────────────────────────────────────────────
+  const reqOrigin = req.headers.origin;
+  if (reqOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', reqOrigin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Authorization, Cookie');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
 
@@ -122,7 +137,14 @@ module.exports = async function handler(req, res) {
         // Forward response headers
         for (const [key, value] of Object.entries(proxyRes.headers)) {
           const lk = key.toLowerCase();
-          if (lk === 'transfer-encoding' || lk === 'connection') continue;
+          if (
+            lk === 'transfer-encoding' ||
+            lk === 'connection' ||
+            lk === 'access-control-allow-origin' ||
+            lk === 'access-control-allow-credentials' ||
+            lk === 'access-control-allow-methods' ||
+            lk === 'access-control-allow-headers'
+          ) continue;
           if (lk === 'location') {
             res.setHeader(key, value.replace(`https://${ORIGIN_HOST}`, ''));
           } else if (lk === 'cache-control' && isStaticOrPlay) {
