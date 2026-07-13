@@ -1,7 +1,10 @@
 import os
 import time
 import re
-import requests
+import json
+import urllib.request
+import urllib.parse
+import urllib.error
 
 def solve():
     scrape_do_token = os.environ.get('SCRAPEDO_TOKEN')
@@ -14,18 +17,23 @@ def solve():
 
     target_url = "https://deltastudy.site/verify"
     # Call Scrape.do with render=true and customWait=8000 to execute Cloudflare JS
-    scrape_do_url = f"https://api.scrape.do?token={scrape_do_token}&url={target_url}&pureCookies=true&render=true&customWait=8000"
+    scrape_do_url = f"https://api.scrape.do?token={scrape_do_token}&url={urllib.parse.quote(target_url)}&pureCookies=true&render=true&customWait=8000"
 
     print("Triggering Scrape.do to solve Cloudflare Turnstile (with 8s render delay)...")
     try:
-        response = requests.get(scrape_do_url, timeout=45)
-        if response.status_code != 200:
-            print(f"Scrape.do API error: {response.status_code} - {response.text}")
+        req = urllib.request.Request(scrape_do_url)
+        try:
+            with urllib.request.urlopen(req, timeout=45) as response:
+                status_code = response.status
+                res_headers = dict(response.info())
+        except urllib.error.HTTPError as e:
+            print(f"Scrape.do API error: {e.code} - {e.read().decode('utf-8', errors='ignore')}")
             exit(1)
 
         # Extract Set-Cookie headers
         set_cookie_headers = []
-        for key, value in response.headers.items():
+        # Case insensitive header lookup in urllib headers info
+        for key, value in res_headers.items():
             if key.lower() in ['set-cookie', 'x-set-cookie']:
                 set_cookie_headers.append(value)
 
@@ -60,24 +68,24 @@ def solve():
         }
 
         print("Saving fresh cookies to Upstash database...")
-        kv_res = requests.post(
+        req = urllib.request.Request(
             f"{kv_url}/set/pi_cookies",
-            headers={"Authorization": f" fBearer {kv_token}" if not kv_token.startswith("Bearer") else kv_token},
-            json=payload
+            data=json.dumps(payload).encode(),
+            headers={
+                "Authorization": f"Bearer {kv_token}",
+                "Content-Type": "application/json"
+            }
         )
-
-        # If it failed, try with standard bearer prefix
-        if kv_res.status_code != 200:
-            kv_res = requests.post(
-                f"{kv_url}/set/pi_cookies",
-                headers={"Authorization": f"Bearer {kv_token}"},
-                json=payload
-            )
-
-        if kv_res.status_code == 200:
-            print("Success! Cookies successfully saved to database.")
-        else:
-            print("Error: Failed to save to Upstash:", kv_res.text)
+        
+        try:
+            with urllib.request.urlopen(req, timeout=15) as res:
+                if res.status == 200:
+                    print("Success! Cookies successfully saved to database.")
+                else:
+                    print("Error: Failed to save to Upstash status:", res.status)
+                    exit(1)
+        except urllib.error.HTTPError as e:
+            print("Error: Failed to save to Upstash:", e.code, e.read().decode('utf-8', errors='ignore'))
             exit(1)
 
     except Exception as e:
