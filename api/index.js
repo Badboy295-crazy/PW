@@ -206,8 +206,7 @@ module.exports = async function handler(req, res) {
       let bodyText = proxyBody.toString('utf8');
 
       // Replace apiserver.deltastudy.site domain with our proxied /apiserver path
-      bodyText = bodyText.replaceAll('https://apiserver.deltastudy.site', `https://${currentHost}/apiserver`);
-      bodyText = bodyText.replaceAll('http://apiserver.deltastudy.site', `http://${currentHost}/apiserver`);
+      bodyText = bodyText.replaceAll('apiserver.deltastudy.site', `${currentHost}/apiserver`);
 
       res.send(Buffer.from(bodyText, 'utf8'));
     } else {
