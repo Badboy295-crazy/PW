@@ -19,11 +19,12 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Run Origin IP Bypass Solver
+      - name: Run Scrape.do Turnstile Solver
         env:
           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
-        run: python auto_solve_sb.py
+          SCRAPEDO_TOKEN: ${{ secrets.SCRAPEDO_TOKEN }}
+        run: python auto_solve_scrape_do.py
 
       - name: Ping Mirror (keep Vercel warm)
         run: |

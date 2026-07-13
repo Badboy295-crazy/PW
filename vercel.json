@@ -19,15 +19,15 @@
     },
     {
       "source": "/_next/:path*",
-      "destination": "https://pwthor.live/_next/:path*"
+      "destination": "https://deltastudy.site/_next/:path*"
     },
     {
       "source": "/static/:path*",
-      "destination": "https://pwthor.live/static/:path*"
+      "destination": "https://deltastudy.site/static/:path*"
     },
     {
       "source": "/favicon.ico",
-      "destination": "https://pwthor.live/favicon.ico"
+      "destination": "https://deltastudy.site/favicon.ico"
     },
     {
       "source": "/(.*)",
