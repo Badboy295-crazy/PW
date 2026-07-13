@@ -195,17 +195,33 @@ module.exports = async function handler(req, res) {
       proxyReq.end();
     });
 
-    // ── HTML/JS String Replacements to proxy API subdomain ──────────────────
-    const contentType = res.getHeader('content-type') || '';
-    if (
-      contentType.includes('text/html') ||
-      contentType.includes('application/javascript') ||
-      contentType.includes('application/json')
-    ) {
+    // ── HTML/JS/JSON String Replacements to proxy API subdomain ──────────────────
+    const contentType = (res.getHeader('content-type') || '').toLowerCase();
+    const isBinary =
+      contentType.includes('image/') ||
+      contentType.includes('video/') ||
+      contentType.includes('audio/') ||
+      contentType.includes('font/') ||
+      contentType.includes('zip') ||
+      contentType.includes('pdf') ||
+      pathname.endsWith('.ts') ||
+      pathname.endsWith('.mp4') ||
+      pathname.endsWith('.m3u8') ||
+      pathname.endsWith('.png') ||
+      pathname.endsWith('.jpg') ||
+      pathname.endsWith('.jpeg') ||
+      pathname.endsWith('.gif') ||
+      pathname.endsWith('.ico') ||
+      pathname.endsWith('.woff') ||
+      pathname.endsWith('.woff2');
+
+    if (!isBinary && proxyBody && proxyBody.length > 0) {
       const currentHost = req.headers.host || '';
       let bodyText = proxyBody.toString('utf8');
 
       // Replace apiserver.deltastudy.site domain with our proxied /apiserver path
+      bodyText = bodyText.replaceAll('https://apiserver.deltastudy.site', `https://${currentHost}/apiserver`);
+      bodyText = bodyText.replaceAll('http://apiserver.deltastudy.site', `http://${currentHost}/apiserver`);
       bodyText = bodyText.replaceAll('apiserver.deltastudy.site', `${currentHost}/apiserver`);
 
       res.send(Buffer.from(bodyText, 'utf8'));
