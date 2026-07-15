@@ -6,6 +6,10 @@
       "destination": "/api/cron-solve.js"
     },
     {
+      "source": "/api/cron",
+      "destination": "/api/cron.js"
+    },
+    {
       "source": "/api/get-tokens",
       "destination": "/api/get-tokens.js"
     },

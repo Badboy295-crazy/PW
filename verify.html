@@ -23,6 +23,30 @@
         const res = await fetch('/api/get-tokens');
         const data = await res.json();
         if (data && data.cookies) {
+          // Loop protection: Check if we already attempted this exact cookie string in this session
+          const attempted = sessionStorage.getItem('attempted_cookies');
+          if (attempted === data.cookies) {
+            console.warn("Loop detected: The cookie stored in DB is expired/invalid. Showing verify page.");
+            // Clear the cookies locally so we don't send stale data
+            const cookiePairs = data.cookies.split(';');
+            cookiePairs.forEach(pair => {
+              const trimPair = pair.trim();
+              if (!trimPair) return;
+              const name = trimPair.split('=')[0].trim();
+              if (name) {
+                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+              }
+            });
+            // Show verification instructions
+            window.addEventListener('DOMContentLoaded', () => {
+              const overlay = document.getElementById('loading-overlay');
+              if (overlay) overlay.style.display = 'none';
+            });
+            return;
+          }
+          
+          sessionStorage.setItem('attempted_cookies', data.cookies);
+
           const cookiePairs = data.cookies.split(';');
           let cookiesSetCount = 0;
           cookiePairs.forEach(pair => {
