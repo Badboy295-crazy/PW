@@ -41,6 +41,8 @@ module.exports = async function handler(req, res) {
   if (pathname.startsWith('/apiserver/')) {
     targetPath = req.url.replace(/^\/apiserver/, '');
     targetHost = API_HOST;
+  } else if (pathname.startsWith('/api/')) {
+    targetHost = API_HOST;
   }
 
   // Build forwarded headers
