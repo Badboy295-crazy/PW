@@ -13,7 +13,7 @@ const targetAgent = new https.Agent({
 let cachedCookies = null;
 let cachedAdminIp = null;
 let lastFetchTime = 0;
-const CACHE_TTL = 3 * 60 * 1000; // 3 minutes cache
+const CACHE_TTL = 15 * 1000; // 15 seconds cache
 
 module.exports = async function handler(req, res) {
   // CORS Headers
@@ -70,13 +70,11 @@ module.exports = async function handler(req, res) {
     pathname.startsWith('/static/');
 
   let cookies = "";
-  let adminIp = "";
 
   if (!isStaticOrPlay && kvUrl && kvToken) {
     const now = Date.now();
     if (cachedCookies && (now - lastFetchTime < CACHE_TTL)) {
       cookies = cachedCookies;
-      adminIp = cachedAdminIp;
     } else {
       try {
         // Read cookies from the shared "pi_cookies" key
@@ -91,13 +89,11 @@ module.exports = async function handler(req, res) {
             cachedAdminIp = obj?.adminIp || "";
             lastFetchTime = now;
             cookies = cachedCookies;
-            adminIp = cachedAdminIp;
           }
         }
       } catch (e) {
         console.error('KV read error:', e.message);
         cookies = cachedCookies || "";
-        adminIp = cachedAdminIp || "";
       }
     }
   }
@@ -114,11 +110,11 @@ module.exports = async function handler(req, res) {
 
   headers['cookie'] = finalCookies;
 
-  if (adminIp && adminIp !== 'origin-bypass') {
-    headers['x-forwarded-for'] = adminIp;
-    headers['x-real-ip']       = adminIp;
-    headers['true-client-ip']  = adminIp;
-  }
+  // Generate a random IP for every request to completely bypass upstream rate limiting (429)
+  const randomIp = `${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}`;
+  headers['x-forwarded-for'] = randomIp;
+  headers['x-real-ip']       = randomIp;
+  headers['true-client-ip']  = randomIp;
 
   // Read request body if needed
   let bodyBuffer = null;
