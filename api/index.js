@@ -190,7 +190,9 @@ module.exports = async function handler(req, res) {
           #pwaBellBtn, 
           #bell-btn, 
           .pwa-bottom-bar, 
-          #pwa-bottom-bar { 
+          #pwa-bottom-bar,
+          [class*="bell"],
+          [id*="bell"] { 
             display: none !important; 
           }
         </style>
