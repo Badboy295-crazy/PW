@@ -16,80 +16,89 @@ def solve():
         exit(1)
 
     target_url = "https://deltastudy.site/verify"
-    # Call Scrape.do with render=true and customWait=8000 to execute Cloudflare JS
     scrape_do_url = f"https://api.scrape.do?token={scrape_do_token}&url={urllib.parse.quote(target_url)}&pureCookies=true&render=true&customWait=8000"
 
-    print("Triggering Scrape.do to solve Cloudflare Turnstile (with 8s render delay)...")
-    try:
-        req = urllib.request.Request(scrape_do_url)
+    max_attempts = 10
+    success = False
+    cookies_str = ""
+
+    for attempt in range(1, max_attempts + 1):
+        print(f"Attempt {attempt}/{max_attempts}: Triggering Scrape.do solver (8s render delay)...")
         try:
-            with urllib.request.urlopen(req, timeout=45) as response:
-                status_code = response.status
+            req = urllib.request.Request(scrape_do_url)
+            # Short timeout of 40s per attempt to avoid hanging
+            with urllib.request.urlopen(req, timeout=40) as response:
                 res_headers = dict(response.info())
+
+            set_cookie_headers = []
+            for key, value in res_headers.items():
+                if key.lower() in ['set-cookie', 'x-set-cookie']:
+                    set_cookie_headers.append(value)
+
+            target_cookies = []
+            for header in set_cookie_headers:
+                parts = re.split(r',(?=[^;]*=)', header) if ',' in header else [header]
+                for part in parts:
+                    cookie_parts = part.split(';')
+                    if cookie_parts:
+                        main_cookie = cookie_parts[0].strip()
+                        if '=' in main_cookie:
+                            name = main_cookie.split('=')[0].strip()
+                            if name.lower() not in ['path', 'domain', 'expires', 'secure', 'samesite', 'httponly', 'max-age']:
+                                if main_cookie not in target_cookies:
+                                    target_cookies.append(main_cookie)
+
+            cookies_str = "; ".join(target_cookies)
+            print(f"Parsed Cookies: {cookies_str}")
+
+            if cookies_str and 'delta_cf_verified' in cookies_str:
+                print("Success! Found delta_cf_verified cookie.")
+                success = True
+                break
+            else:
+                print("Warning: delta_cf_verified cookie not found in response. Cloudflare Turnstile block wasn't solved.")
         except urllib.error.HTTPError as e:
-            print(f"Scrape.do API error: {e.code} - {e.read().decode('utf-8', errors='ignore')}")
-            exit(1)
-
-        # Extract Set-Cookie headers
-        set_cookie_headers = []
-        # Case insensitive header lookup in urllib headers info
-        for key, value in res_headers.items():
-            if key.lower() in ['set-cookie', 'x-set-cookie']:
-                set_cookie_headers.append(value)
-
-        print("Received Set-Cookie headers from Scrape.do.")
-
-        # Parse cookies properly
-        target_cookies = []
-        for header in set_cookie_headers:
-            parts = re.split(r',(?=[^;]*=)', header) if ',' in header else [header]
-            for part in parts:
-                cookie_parts = part.split(';')
-                if cookie_parts:
-                    main_cookie = cookie_parts[0].strip()
-                    if '=' in main_cookie:
-                        name = main_cookie.split('=')[0].strip()
-                        if name.lower() not in ['path', 'domain', 'expires', 'secure', 'samesite', 'httponly', 'max-age']:
-                            if main_cookie not in target_cookies:
-                                target_cookies.append(main_cookie)
-
-        cookies_str = "; ".join(target_cookies)
-        print("Parsed Cookies String:", cookies_str)
-
-        if not cookies_str or 'delta_cf_verified' not in cookies_str:
-            print("Error: delta_cf_verified cookie not found in the response. Turnstile may have failed to solve.")
-            exit(1)
-
-        # Save to Upstash
-        payload = {
-            "cookies": cookies_str,
-            "adminIp": "104.28.166.255", # Static IP placeholder
-            "updatedAt": int(time.time() * 1000)
-        }
-
-        print("Saving fresh cookies to Upstash database...")
-        req = urllib.request.Request(
-            f"{kv_url}/set/pi_cookies",
-            data=json.dumps(payload).encode(),
-            headers={
-                "Authorization": f"Bearer {kv_token}",
-                "Content-Type": "application/json"
-            }
-        )
+            print(f"Attempt {attempt} HTTPError: {e.code} - {e.read().decode('utf-8', errors='ignore')}")
+        except Exception as e:
+            print(f"Attempt {attempt} Exception: {e}")
         
-        try:
-            with urllib.request.urlopen(req, timeout=15) as res:
-                if res.status == 200:
-                    print("Success! Cookies successfully saved to database.")
-                else:
-                    print("Error: Failed to save to Upstash status:", res.status)
-                    exit(1)
-        except urllib.error.HTTPError as e:
-            print("Error: Failed to save to Upstash:", e.code, e.read().decode('utf-8', errors='ignore'))
-            exit(1)
+        if attempt < max_attempts:
+            print("Waiting 5 seconds before retrying...")
+            time.sleep(5)
 
+    if not success:
+        print(f"Error: Failed to solve Turnstile after {max_attempts} attempts.")
+        exit(1)
+
+    # Save to Upstash
+    payload = {
+        "cookies": cookies_str,
+        "adminIp": "104.28.166.255", # Legacy placeholder
+        "updatedAt": int(time.time() * 1000)
+    }
+
+    print("Saving fresh cookies to Upstash database...")
+    req = urllib.request.Request(
+        f"{kv_url}/set/pi_cookies",
+        data=json.dumps(payload).encode(),
+        headers={
+            "Authorization": f"Bearer {kv_token}",
+            "Content-Type": "application/json"
+        }
+    )
+    
+    try:
+        with urllib.request.urlopen(req, timeout=15) as res:
+            if res.status == 200:
+                print("Success! Cookies successfully saved to database.")
+            else:
+                print("Error: Failed to save to Upstash status:", res.status)
+                exit(1)
+    except urllib.error.HTTPError as e:
+        print("Error: Failed to save to Upstash:", e.code, e.read().decode('utf-8', errors='ignore'))
+        exit(1)
     except Exception as e:
-        print("Exception occurred during execution:", e)
+        print("Exception saving to Upstash:", e)
         exit(1)
 
 if __name__ == '__main__':
