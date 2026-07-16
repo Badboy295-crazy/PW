@@ -76,7 +76,7 @@ module.exports = async function handler(req, res) {
       updatedAt: Date.now()
     };
 
-    const kvRes = await fetch(`${kvUrl}/set/pi_cookies`, {
+    const kvRes = await fetch(`${kvUrl}/set/pw_cookies`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${kvToken}`

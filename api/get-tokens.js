@@ -13,7 +13,7 @@ module.exports = async function handler(req, res) {
   }
   
   try {
-    const kvRes = await fetch(`${kvUrl}/get/pi_cookies`, {
+    const kvRes = await fetch(`${kvUrl}/get/pw_cookies`, {
       headers: {
         Authorization: `Bearer ${kvToken}`
       }

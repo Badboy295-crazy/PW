@@ -77,8 +77,8 @@ module.exports = async function handler(req, res) {
       cookies = cachedCookies;
     } else {
       try {
-        // Read cookies from the shared "pi_cookies" key
-        const kvRes = await fetch(`${kvUrl}/get/pi_cookies`, {
+        // Read cookies from the shared "pw_cookies" key
+        const kvRes = await fetch(`${kvUrl}/get/pw_cookies`, {
           headers: { Authorization: `Bearer ${kvToken}` },
         });
         if (kvRes.ok) {

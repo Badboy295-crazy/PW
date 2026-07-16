@@ -128,7 +128,7 @@ def main():
 
     print("\nSaving to Upstash...")
     req = urllib.request.Request(
-        f"{kv_url}/set/pi_cookies",
+        f"{kv_url}/set/pw_cookies",
         data=json.dumps(payload).encode(),
         headers={
             "Authorization": f"Bearer {kv_token}",

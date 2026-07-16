@@ -36,7 +36,7 @@ module.exports = async function handler(req, res) {
   };
   
   try {
-    const kvRes = await fetch(`${kvUrl}/set/pi_cookies`, {
+    const kvRes = await fetch(`${kvUrl}/set/pw_cookies`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${kvToken}`
@@ -44,7 +44,7 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify(payload)
     });
     if (kvRes.ok) {
-      console.log(`Successfully updated Pi cookies and Admin IP (${adminIp}) in database.`);
+      console.log(`Successfully updated PW cookies and Admin IP (${adminIp}) in database.`);
       return res.status(200).json({ success: true });
     }
   } catch (e) {
