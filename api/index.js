@@ -181,6 +181,22 @@ module.exports = async function handler(req, res) {
       bodyText = bodyText.replaceAll('http://apiserver.deltastudy.site', `http://${currentHost}/apiserver`);
       bodyText = bodyText.replaceAll('apiserver.deltastudy.site', `${currentHost}/apiserver`);
 
+      // Inject CSS to hide the iframe's internal bell button and bottom bar to prevent duplication
+      const hideOverrides = `
+        <style>
+          .pwa-bell-btn, 
+          .bell-btn, 
+          .floating-bell, 
+          #pwaBellBtn, 
+          #bell-btn, 
+          .pwa-bottom-bar, 
+          #pwa-bottom-bar { 
+            display: none !important; 
+          }
+        </style>
+      `;
+      bodyText = bodyText.replace(/<\/head>/i, `${hideOverrides}</head>`);
+
       res.send(Buffer.from(bodyText, 'utf8'));
     } else {
       res.send(proxyBody);
