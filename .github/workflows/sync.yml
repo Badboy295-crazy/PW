@@ -3,9 +3,6 @@ name: DeltaStudy Cookie Auto Sync
 on:
   schedule:
     - cron: '*/45 * * * *'
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:

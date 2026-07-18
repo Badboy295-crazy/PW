@@ -18,7 +18,7 @@ def solve():
     target_url = "https://deltastudy.site/verify"
     scrape_do_url = f"https://api.scrape.do?token={scrape_do_token}&url={urllib.parse.quote(target_url)}&pureCookies=true&render=true&customWait=8000"
 
-    max_attempts = 10
+    max_attempts = 3
     success = False
     cookies_str = ""
 
