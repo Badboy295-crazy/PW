@@ -12,6 +12,39 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'GITHUB_PAT environment variable is not configured in Vercel.' });
   }
 
+  const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (kvUrl && kvToken) {
+    try {
+      const kvRes = await fetch(`${kvUrl}/get/pw_cookies`, {
+        headers: { Authorization: `Bearer ${kvToken}` },
+      });
+      if (kvRes.ok) {
+        const kvData = await kvRes.json();
+        if (kvData.result) {
+          const obj = JSON.parse(kvData.result);
+          const updatedAt = obj?.updatedAt || 0;
+          const ageMs = Date.now() - updatedAt;
+          const ageMin = ageMs / 60000;
+
+          // If cookies are fresh (less than 30 minutes old), skip trigger
+          if (ageMin < 30) {
+            console.log(`Skipping sync. Cookies are still fresh (${ageMin.toFixed(1)} mins old).`);
+            return res.status(200).json({
+              success: true,
+              skipped: true,
+              message: `Skipped triggering workflow. Cookies are fresh (age: ${ageMin.toFixed(1)} minutes).`
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error checking cookie age from KV:', e.message);
+      // Proceed to trigger if KV check fails to ensure safety
+    }
+  }
+
   // PW repository actions trigger
   const url = 'https://api.github.com/repos/Badboy295-crazy/PW/actions/workflows/sync.yml/dispatches';
   
