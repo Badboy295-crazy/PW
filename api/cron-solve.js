@@ -16,6 +16,33 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Database not configured." });
   }
 
+  // Check cookie age before calling Scrape.do to conserve API limits
+  try {
+    const kvCheck = await fetch(`${kvUrl}/get/pw_cookies`, {
+      headers: { Authorization: `Bearer ${kvToken}` },
+    });
+    if (kvCheck.ok) {
+      const kvCheckData = await kvCheck.json();
+      if (kvCheckData.result) {
+        const obj = JSON.parse(kvCheckData.result);
+        const updatedAt = obj?.updatedAt || 0;
+        const ageMs = Date.now() - updatedAt;
+        const ageMin = ageMs / 60000;
+
+        if (ageMin < 30) {
+          console.log(`Cron-solve skipped. Cookies are fresh (${ageMin.toFixed(1)} mins old).`);
+          return res.status(200).json({
+            success: true,
+            skipped: true,
+            message: `Skipped solving. Cookies are fresh (age: ${ageMin.toFixed(1)} minutes).`
+          });
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Error checking cookie age in cron-solve:', e.message);
+  }
+
   const targetUrl = "https://deltastudy.site/verify";
   // Call Scrape.do with render=true and customWait=8000 to execute Cloudflare Turnstile JS
   const scrapeDoApiUrl = `https://api.scrape.do?token=${scrapeDoToken}&url=${encodeURIComponent(targetUrl)}&pureCookies=true&render=true&customWait=8000`;
