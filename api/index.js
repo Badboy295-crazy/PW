@@ -181,7 +181,8 @@ module.exports = async function handler(req, res) {
       bodyText = bodyText.replaceAll('http://apiserver.deltastudy.site', `http://${currentHost}/apiserver`);
       bodyText = bodyText.replaceAll('apiserver.deltastudy.site', `${currentHost}/apiserver`);
 
-      // Inject CSS to hide the iframe's internal bell button and bottom bar to prevent duplication
+      // Inject CSS to hide the iframe's internal bell button and bottom bar to prevent duplication, 
+      // and inject client-side script to auto-generate the link shortener key via /deltapiro.
       const hideOverrides = `
         <style>
           .pwa-bell-btn, 
@@ -196,6 +197,24 @@ module.exports = async function handler(req, res) {
             display: none !important; 
           }
         </style>
+        <script>
+          (function() {
+            try {
+              var path = window.location.pathname;
+              if (path !== '/deltapiro' && path !== '/verify' && !path.startsWith('/api/')) {
+                var key = localStorage.getItem('delta-access-key');
+                var expiration = localStorage.getItem('delta-key-expiration');
+                var isExpired = expiration ? (Date.now() > parseInt(expiration, 10)) : true;
+                if (!key || isExpired) {
+                  console.log('Redirecting to /deltapiro to generate access key...');
+                  window.location.href = '/deltapiro';
+                }
+              }
+            } catch (e) {
+              console.error('Bypass script error:', e);
+            }
+          })();
+        </script>
       `;
       bodyText = bodyText.replace(/<\/head>/i, `${hideOverrides}</head>`);
 
