@@ -138,13 +138,7 @@ module.exports = async function handler(req, res) {
       const lk = key.toLowerCase();
       if (lk === 'transfer-encoding' || lk === 'connection' || lk === 'content-encoding') continue;
       if (lk === 'location') {
-        let locationVal = value.replace(`https://${targetHost}`, '');
-        // If origin redirects to /verify (Cloudflare expired), send user to /deltapiro instead
-        // /deltapiro generates a local key and redirects to homepage seamlessly
-        if (locationVal.startsWith('/verify') || locationVal.includes('/verify?')) {
-          locationVal = '/deltapiro';
-        }
-        res.setHeader(key, locationVal);
+        res.setHeader(key, value.replace(`https://${targetHost}`, ''));
       } else if (lk === 'cache-control' && isStaticOrPlay) {
         res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=3600');
       } else {
