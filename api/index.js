@@ -43,6 +43,8 @@ module.exports = async function handler(req, res) {
     targetHost = API_HOST;
   } else if (pathname.startsWith('/api/')) {
     targetHost = API_HOST;
+  } else if (pathname === '/deltapiro' || pathname === '/deltapro' || pathname === '//deltapiro' || pathname === '//deltapro') {
+    targetHost = 'pipro.deltastudy.site';
   }
 
   // Build forwarded headers
@@ -58,6 +60,10 @@ module.exports = async function handler(req, res) {
   headers['host']    = targetHost;
   headers['referer'] = `https://${targetHost}/`;
   headers['origin']  = `https://${targetHost}`;
+
+  if (targetHost === 'pipro.deltastudy.site') {
+    headers['X-Delta-Friend-Key'] = 'pipro-only-lol';
+  }
 
   // Read cookies and admin IP from Upstash KV
   const kvUrl   = process.env.KV_REST_API_URL   || process.env.UPSTASH_REDIS_REST_URL;
@@ -79,8 +85,9 @@ module.exports = async function handler(req, res) {
       cookies = cachedCookies;
     } else {
       try {
-        // Read cookies from the shared "pw_cookies" key
-        const kvRes = await fetch(`${kvUrl}/get/pw_cookies`, {
+        const cookieKey = (targetHost === 'pipro.deltastudy.site') ? 'pi_cookies' : 'pw_cookies';
+        // Read cookies from the shared database
+        const kvRes = await fetch(`${kvUrl}/get/${cookieKey}`, {
           headers: { Authorization: `Bearer ${kvToken}` },
         });
         if (kvRes.ok) {
@@ -201,7 +208,8 @@ module.exports = async function handler(req, res) {
           (function() {
             try {
               var path = window.location.pathname;
-              if (path !== '/deltapiro' && path !== '/verify' && !path.startsWith('/api/')) {
+              var isDeltaPRoute = path === '/deltapiro' || path === '/deltapro' || path === '//deltapiro' || path === '//deltapro';
+              if (!isDeltaPRoute && path !== '/verify' && !path.startsWith('/api/')) {
                 var key = localStorage.getItem('delta-access-key');
                 var expiration = localStorage.getItem('delta-key-expiration');
                 var isExpired = expiration ? (Date.now() > parseInt(expiration, 10)) : true;
