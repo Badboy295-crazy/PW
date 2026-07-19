@@ -34,6 +34,91 @@ module.exports = async function handler(req, res) {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
 
+  // Render local key generation page for /deltapiro and /deltapro routes
+  if (pathname === '/deltapiro' || pathname === '/deltapro' || pathname === '//deltapiro' || pathname === '//deltapro') {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.status(200).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Delta Study - Key Generation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #050816;
+            color: #f3f4f6;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+        .dots {
+            display: flex;
+            gap: 8px;
+        }
+        .dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: #6366f1;
+            animation: pulse 1.4s infinite ease-in-out both;
+        }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes pulse {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+        .text {
+            font-size: 18px;
+            font-weight: 600;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+        <p class="text">Generating your key and redirecting...</p>
+    </div>
+    <script>
+        (function() {
+            try {
+                var timestamp = new Date().getTime();
+                var randomStr = Math.random().toString(36).substring(2);
+                var key = "delta-key-" + timestamp + "-" + randomStr;
+                var expiration = timestamp + 86400000; // 24 hours validity
+                
+                localStorage.setItem("delta-access-key", key);
+                localStorage.setItem("delta-key-expiration", expiration.toString());
+                
+                console.log("Access key generated successfully!");
+                setTimeout(function() {
+                    window.location.replace("/");
+                }, 1000);
+            } catch (e) {
+                console.error("Key generation failed:", e);
+                window.location.replace("/");
+            }
+        })();
+    </script>
+</body>
+</html>`);
+  }
+
   // Determine Target Host and Path
   let targetPath = req.url;
   let targetHost = TARGET_HOST;
