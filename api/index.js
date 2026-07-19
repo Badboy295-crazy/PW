@@ -244,27 +244,14 @@ module.exports = async function handler(req, res) {
 
     const proxyBody = proxyResData.body;
     const contentType = (res.getHeader('content-type') || '').toLowerCase();
-    const isBinary =
-      contentType.includes('image/') ||
-      contentType.includes('video/') ||
-      contentType.includes('audio/') ||
-      contentType.includes('font/') ||
-      contentType.includes('zip') ||
-      contentType.includes('pdf') ||
-      contentType.includes('octet-stream') ||
-      pathname.startsWith('/play') ||
-      pathname.endsWith('.ts') ||
-      pathname.endsWith('.mp4') ||
-      pathname.endsWith('.m3u8') ||
-      pathname.endsWith('.png') ||
-      pathname.endsWith('.jpg') ||
-      pathname.endsWith('.jpeg') ||
-      pathname.endsWith('.gif') ||
-      pathname.endsWith('.ico') ||
-      pathname.endsWith('.woff') ||
-      pathname.endsWith('.woff2');
+    const isText =
+      contentType.includes('text/html') ||
+      contentType.includes('text/css') ||
+      contentType.includes('application/javascript') ||
+      contentType.includes('text/javascript') ||
+      contentType.includes('image/svg+xml');
 
-    if (!isBinary && proxyBody && proxyBody.length > 0) {
+    if (isText && proxyBody && proxyBody.length > 0) {
       const currentHost = req.headers.host || '';
       let bodyText = proxyBody.toString('utf8');
 
