@@ -21,7 +21,22 @@ module.exports = async function handler(req, res) {
     if (kvRes.ok) {
       const kvData = await kvRes.json();
       if (kvData.result) {
-        return res.status(200).json(JSON.parse(kvData.result));
+        const obj = JSON.parse(kvData.result);
+        
+        // Self-Healing Auto-Recovery: Trigger background solve if cookies are older than 29 minutes
+        const now = Date.now();
+        const updatedAt = obj?.updatedAt || 0;
+        const ageMs = now - updatedAt;
+        const ageMin = ageMs / 60000;
+        if (ageMin > 29) {
+          const cronSecret = process.env.CRON_SECRET || 'autosync123';
+          const currentHost = req.headers.host || '';
+          const solveUrl = `https://${currentHost}/api/cron-solve?secret=${cronSecret}`;
+          console.log(`[Auto-Recovery] Cookies are expired (${ageMin.toFixed(1)} mins old). Triggering background solve: ${solveUrl}`);
+          fetch(solveUrl).catch(err => console.error('[Auto-Recovery] Solve trigger failed:', err.message));
+        }
+
+        return res.status(200).json(obj);
       }
     }
   } catch (e) {
