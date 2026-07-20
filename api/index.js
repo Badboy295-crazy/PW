@@ -183,6 +183,18 @@ module.exports = async function handler(req, res) {
             cachedAdminIp = obj?.adminIp || "";
             lastFetchTime = now;
             cookies = cachedCookies;
+
+            // Self-Healing Auto-Recovery: Trigger background solve if cookies are older than 29 minutes
+            const updatedAt = obj?.updatedAt || 0;
+            const ageMs = now - updatedAt;
+            const ageMin = ageMs / 60000;
+            if (ageMin > 29) {
+              const cronSecret = process.env.CRON_SECRET || 'autosync123';
+              const currentHost = req.headers.host || '';
+              const solveUrl = `https://${currentHost}/api/cron-solve?secret=${cronSecret}`;
+              console.log(`[Auto-Recovery] Cookies are expired (${ageMin.toFixed(1)} mins old). Triggering background solve: ${solveUrl}`);
+              fetch(solveUrl).catch(err => console.error('[Auto-Recovery] Solve trigger failed:', err.message));
+            }
           }
         }
       } catch (e) {
