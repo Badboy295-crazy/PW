@@ -28,8 +28,8 @@ module.exports = async function handler(req, res) {
           const ageMs = Date.now() - updatedAt;
           const ageMin = ageMs / 60000;
 
-          // If cookies are fresh (less than 30 minutes old), skip trigger
-          if (ageMin < 30) {
+          // If cookies are fresh (less than 25 minutes old), skip trigger
+          if (ageMin < 25) {
             console.log(`Skipping sync. Cookies are still fresh (${ageMin.toFixed(1)} mins old).`);
             return res.status(200).json({
               success: true,

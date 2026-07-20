@@ -29,7 +29,7 @@ module.exports = async function handler(req, res) {
         const ageMs = Date.now() - updatedAt;
         const ageMin = ageMs / 60000;
 
-        if (ageMin < 30) {
+        if (ageMin < 25) {
           console.log(`Cron-solve skipped. Cookies are fresh (${ageMin.toFixed(1)} mins old).`);
           return res.status(200).json({
             success: true,
