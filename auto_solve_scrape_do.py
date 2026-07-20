@@ -18,7 +18,7 @@ def solve():
     target_url = "https://deltastudy.site/verify"
     scrape_do_url = f"https://api.scrape.do?token={scrape_do_token}&url={urllib.parse.quote(target_url)}&pureCookies=true&render=true&customWait=8000"
 
-    max_attempts = 3
+    max_attempts = 4
     success = False
     cookies_str = ""
 
@@ -26,8 +26,8 @@ def solve():
         print(f"Attempt {attempt}/{max_attempts}: Triggering Scrape.do solver (8s render delay)...")
         try:
             req = urllib.request.Request(scrape_do_url)
-            # Short timeout of 40s per attempt to avoid hanging
-            with urllib.request.urlopen(req, timeout=40) as response:
+            # Short timeout of 60s per attempt to avoid hanging
+            with urllib.request.urlopen(req, timeout=60) as response:
                 res_headers = dict(response.info())
 
             set_cookie_headers = []
