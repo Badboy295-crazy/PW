@@ -15,7 +15,9 @@ def solve():
         print("Error: Missing required environment variables (SCRAPEDO_TOKEN, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN).")
         exit(1)
 
-    target_url = "https://deltastudy.site/verify"
+    max_attempts = 4
+    success = False
+    cookies_str = ""
     for attempt in range(1, max_attempts + 1):
         use_super = "&super=true" if attempt >= 3 else ""
         scrape_do_url = f"https://api.scrape.do?token={scrape_do_token}&url={urllib.parse.quote(target_url)}&pureCookies=true&render=true&customWait=8000{use_super}"
