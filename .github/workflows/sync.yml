@@ -1,8 +1,6 @@
 name: DeltaStudy Cookie Auto Sync
 
 on:
-  schedule:
-    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 jobs:
