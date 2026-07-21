@@ -15,6 +15,7 @@ def solve():
         print("Error: Missing required environment variables (SCRAPEDO_TOKEN, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN).")
         exit(1)
 
+    target_url = "https://deltastudy.site/verify"
     max_attempts = 4
     success = False
     cookies_str = ""
