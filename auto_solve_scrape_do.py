@@ -16,14 +16,10 @@ def solve():
         exit(1)
 
     target_url = "https://deltastudy.site/verify"
-    scrape_do_url = f"https://api.scrape.do?token={scrape_do_token}&url={urllib.parse.quote(target_url)}&pureCookies=true&render=true&customWait=8000"
-
-    max_attempts = 4
-    success = False
-    cookies_str = ""
-
     for attempt in range(1, max_attempts + 1):
-        print(f"Attempt {attempt}/{max_attempts}: Triggering Scrape.do solver (8s render delay)...")
+        use_super = "&super=true" if attempt >= 3 else ""
+        scrape_do_url = f"https://api.scrape.do?token={scrape_do_token}&url={urllib.parse.quote(target_url)}&pureCookies=true&render=true&customWait=8000{use_super}"
+        print(f"Attempt {attempt}/{max_attempts} (super={attempt >= 3}): Triggering Scrape.do solver (8s render delay)...")
         try:
             req = urllib.request.Request(scrape_do_url)
             # Short timeout of 60s per attempt to avoid hanging
