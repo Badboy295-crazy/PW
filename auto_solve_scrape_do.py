@@ -21,8 +21,8 @@ def solve():
     cookies_str = ""
     for attempt in range(1, max_attempts + 1):
         use_super = "&super=true" if attempt >= 3 else ""
-        scrape_do_url = f"https://api.scrape.do?token={scrape_do_token}&url={urllib.parse.quote(target_url)}&pureCookies=true&render=true&customWait=8000{use_super}"
-        print(f"Attempt {attempt}/{max_attempts} (super={attempt >= 3}): Triggering Scrape.do solver (8s render delay)...")
+        scrape_do_url = f"https://api.scrape.do?token={scrape_do_token}&url={urllib.parse.quote(target_url)}&pureCookies=true&render=true&customWait=15000{use_super}"
+        print(f"Attempt {attempt}/{max_attempts} (super={attempt >= 3}): Triggering Scrape.do solver (15s render delay)...")
         try:
             req = urllib.request.Request(scrape_do_url)
             # Short timeout of 60s per attempt to avoid hanging
