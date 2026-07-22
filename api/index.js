@@ -235,32 +235,20 @@ module.exports = async function handler(req, res) {
             lastFetchTime = now;
             cookies = cachedCookies;
 
-            // Self-Healing Auto-Recovery: Trigger background solve if cookies are older than 29 minutes
-            const updatedAt = obj?.updatedAt || 0;
-            const ageMs = now - updatedAt;
-            const ageMin = ageMs / 60000;
-            if (ageMin > 29) {
-              const cronSecret = process.env.CRON_SECRET || 'autosync123';
-              const currentHost = req.headers.host || '';
-              const solveUrl = `https://${currentHost}/api/cron-solve?secret=${cronSecret}`;
-              console.log(`[Auto-Recovery] Cookies are expired (${ageMin.toFixed(1)} mins old). Triggering background solve: ${solveUrl}`);
-              fetch(solveUrl).catch(err => console.error('[Auto-Recovery] Solve trigger failed:', err.message));
-            }
           }
         }
       } catch (e) {
-        console.error('KV read error:', e.message);
         cookies = cachedCookies || "";
       }
     }
   }
 
-  let freshTurnstileCookie = cookies;
-  if (!freshTurnstileCookie || !freshTurnstileCookie.includes('delta_cf_verified')) {
-    freshTurnstileCookie = await getFreshScrapeDoCookie();
+  let activeCookie = cookies;
+  if (!activeCookie || !activeCookie.includes('delta_cf_verified') || activeCookie === 'delta_cf_verified=1') {
+    activeCookie = await getFreshScrapeDoCookie();
   }
-  let userOtherCookies = "";
 
+  let userOtherCookies = "";
   if (req.headers['cookie']) {
     // Strip old delta_cf_verified from user browser cookies so it doesn't overwrite real Turnstile token
     userOtherCookies = req.headers['cookie']
@@ -270,7 +258,7 @@ module.exports = async function handler(req, res) {
       .join('; ');
   }
 
-  headers['cookie'] = freshTurnstileCookie + (userOtherCookies ? '; ' + userOtherCookies : '');
+  headers['cookie'] = activeCookie + (userOtherCookies ? '; ' + userOtherCookies : '');
 
   // Generate a random IP for every request to completely bypass upstream rate limiting (429)
   const randomIp = `${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}`;
