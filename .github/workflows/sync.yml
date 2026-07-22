@@ -1,6 +1,8 @@
 name: DeltaStudy Cookie Auto Sync
 
 on:
+  schedule:
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -26,5 +28,5 @@ jobs:
 
       - name: Ping Mirror (keep Vercel warm)
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "https://pw-olive-three.vercel.app/")
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "https://rangexcoder-study.vercel.app/")
           echo "Mirror ping status: $STATUS"

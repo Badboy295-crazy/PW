@@ -255,7 +255,10 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  let freshTurnstileCookie = await getFreshScrapeDoCookie();
+  let freshTurnstileCookie = cookies;
+  if (!freshTurnstileCookie || !freshTurnstileCookie.includes('delta_cf_verified')) {
+    freshTurnstileCookie = await getFreshScrapeDoCookie();
+  }
   let userOtherCookies = "";
 
   if (req.headers['cookie']) {
