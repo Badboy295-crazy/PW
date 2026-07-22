@@ -31,15 +31,24 @@ async function getFreshScrapeDoCookie() {
 
   try {
     const res = await fetch(scrapeDoUrl, { method: 'GET' });
-    const setCookieHeaders = res.headers.getSetCookie ? res.headers.getSetCookie() : [];
+    let rawHeaders = [];
+    if (typeof res.headers.getSetCookie === 'function') {
+      rawHeaders = res.headers.getSetCookie();
+    }
+    if (!rawHeaders || rawHeaders.length === 0) {
+      const singleHeader = res.headers.get('set-cookie') || res.headers.get('x-set-cookie') || '';
+      if (singleHeader) {
+        rawHeaders = singleHeader.split(/,\s*(?=[^;]*=)/);
+      }
+    }
     
     let targetCookies = [];
-    for (const header of setCookieHeaders) {
+    for (const header of rawHeaders) {
       const parts = header.split(';');
-      if (parts.length > 0) {
-        const main = parts[0].trim();
-        if (main.includes('delta_cf_verified=')) {
-          targetCookies.push(main);
+      for (const part of parts) {
+        const trimmed = part.trim();
+        if (trimmed.startsWith('delta_cf_verified=')) {
+          targetCookies.push(trimmed);
         }
       }
     }
