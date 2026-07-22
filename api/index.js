@@ -27,7 +27,7 @@ async function getFreshScrapeDoCookie() {
 
   const token = process.env.SCRAPEDO_TOKEN || 'ba70ac83bc71441481a4f6f1f6d469b26be12eca8fd';
   const targetUrl = encodeURIComponent('https://deltastudy.site/verify');
-  const scrapeDoUrl = `https://api.scrape.do?token=${token}&url=${targetUrl}&pureCookies=true&render=true&customWait=15000`;
+  const scrapeDoUrl = `https://api.scrape.do?token=${token}&url=${targetUrl}&pureCookies=true&render=true&customWait=5000`;
 
   try {
     const res = await fetch(scrapeDoUrl, { method: 'GET' });
