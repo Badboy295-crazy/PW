@@ -15,6 +15,48 @@ let cachedAdminIp = null;
 let lastFetchTime = 0;
 const CACHE_TTL = 15 * 1000; // 15 seconds cache
 
+let autoSolvedCookie = null;
+let autoSolvedTime = 0;
+const AUTO_SOLVE_TTL = 20 * 60 * 1000; // 20 minutes
+
+async function getFreshScrapeDoCookie() {
+  const now = Date.now();
+  if (autoSolvedCookie && (now - autoSolvedTime < AUTO_SOLVE_TTL)) {
+    return autoSolvedCookie;
+  }
+
+  const token = process.env.SCRAPEDO_TOKEN || 'ba70ac83bc71441481a4f6f1f6d469b26be12eca8fd';
+  const targetUrl = encodeURIComponent('https://deltastudy.site/verify');
+  const scrapeDoUrl = `https://api.scrape.do?token=${token}&url=${targetUrl}&pureCookies=true&render=true&customWait=15000`;
+
+  try {
+    const res = await fetch(scrapeDoUrl, { method: 'GET' });
+    const setCookieHeaders = res.headers.getSetCookie ? res.headers.getSetCookie() : [];
+    
+    let targetCookies = [];
+    for (const header of setCookieHeaders) {
+      const parts = header.split(';');
+      if (parts.length > 0) {
+        const main = parts[0].trim();
+        if (main.includes('delta_cf_verified=')) {
+          targetCookies.push(main);
+        }
+      }
+    }
+
+    if (targetCookies.length > 0) {
+      autoSolvedCookie = targetCookies.join('; ');
+      autoSolvedTime = now;
+      console.log('Successfully auto-solved Turnstile cookie via Scrape.do:', autoSolvedCookie);
+      return autoSolvedCookie;
+    }
+  } catch (e) {
+    console.error('Error auto-solving Scrape.do cookie:', e.message);
+  }
+
+  return autoSolvedCookie || 'delta_cf_verified=1';
+}
+
 module.exports = async function handler(req, res) {
   // CORS Headers
   const reqOrigin = req.headers.origin;
@@ -206,8 +248,8 @@ module.exports = async function handler(req, res) {
 
   // Inject Bypass Cookie automatically for all users (Incognito/New Users)
   let finalCookies = cookies || "";
-  if (!finalCookies.includes('delta_cf_verified')) {
-    finalCookies = (finalCookies ? finalCookies + '; ' : '') + 'delta_cf_verified=1';
+  if (!finalCookies || !finalCookies.includes('delta_cf_verified') || finalCookies === 'delta_cf_verified=1') {
+    finalCookies = await getFreshScrapeDoCookie();
   }
   
   if (req.headers['cookie']) {
