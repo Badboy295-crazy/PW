@@ -246,17 +246,19 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // Inject Bypass Cookie automatically for all users (Incognito/New Users)
-  let finalCookies = cookies || "";
-  if (!finalCookies || !finalCookies.includes('delta_cf_verified') || finalCookies === 'delta_cf_verified=1') {
-    finalCookies = await getFreshScrapeDoCookie();
-  }
-  
+  let freshTurnstileCookie = await getFreshScrapeDoCookie();
+  let userOtherCookies = "";
+
   if (req.headers['cookie']) {
-    finalCookies = finalCookies + '; ' + req.headers['cookie'];
+    // Strip old delta_cf_verified from user browser cookies so it doesn't overwrite real Turnstile token
+    userOtherCookies = req.headers['cookie']
+      .split(';')
+      .map(c => c.trim())
+      .filter(c => !c.toLowerCase().startsWith('delta_cf_verified='))
+      .join('; ');
   }
 
-  headers['cookie'] = finalCookies;
+  headers['cookie'] = freshTurnstileCookie + (userOtherCookies ? '; ' + userOtherCookies : '');
 
   // Generate a random IP for every request to completely bypass upstream rate limiting (429)
   const randomIp = `${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}`;
