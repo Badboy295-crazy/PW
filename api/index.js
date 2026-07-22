@@ -151,8 +151,8 @@ module.exports = async function handler(req, res) {
   }
 
   // Read cookies and admin IP from Upstash KV
-  const kvUrl   = process.env.KV_REST_API_URL   || process.env.UPSTASH_REDIS_REST_URL;
-  const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  const kvUrl   = process.env.KV_REST_API_URL   || process.env.UPSTASH_REDIS_REST_URL   || 'https://global-willing-cod-31627.upstash.io';
+  const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || 'AXeLASQgYjJhODFiNzItMTY2Yi00MzhkLTliMTctNmIwYjhhNTdmMTU3MWRjMmRlNjBmNzVkNDEzYThjYThjNjA8Nzk5YzVhMjQ=';
 
   const isStaticOrPlay =
     pathname.startsWith('/play') ||
