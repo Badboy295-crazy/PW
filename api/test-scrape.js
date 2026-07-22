@@ -1,5 +1,5 @@
 module.exports = async function handler(req, res) {
-  const token = process.env.SCRAPEDO_TOKEN || 'ba70ac83bc71441481a4f6f1f6d469b26be12eca8fd';
+  const token = 'ba70ac83bc71441481a4f6f1f6d469b26be12eca8fd';
   const targetUrl = encodeURIComponent('https://deltastudy.site/verify');
   const scrapeDoUrl = `https://api.scrape.do?token=${token}&url=${targetUrl}&pureCookies=true&render=true&customWait=5000`;
 
@@ -14,6 +14,7 @@ module.exports = async function handler(req, res) {
     let getSetCookieResult = typeof response.headers.getSetCookie === 'function' ? response.headers.getSetCookie() : 'not a function';
 
     return res.status(200).json({
+      tokenUsed: token,
       status: response.status,
       durationMs: duration,
       headers: allHeaders,
