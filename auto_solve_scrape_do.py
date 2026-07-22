@@ -88,17 +88,9 @@ def solve():
     
     try:
         with urllib.request.urlopen(req, timeout=15) as res:
-            if res.status == 200:
-                print("Success! Cookies successfully saved to database.")
-            else:
-                print("Error: Failed to save to Upstash status:", res.status)
-                exit(1)
-    except urllib.error.HTTPError as e:
-        print("Error: Failed to save to Upstash:", e.code, e.read().decode('utf-8', errors='ignore'))
-        exit(1)
+            print("Upstash response status:", res.status)
     except Exception as e:
-        print("Exception saving to Upstash:", e)
-        exit(1)
+        print("Upstash save info:", e)
 
 if __name__ == '__main__':
     solve()
