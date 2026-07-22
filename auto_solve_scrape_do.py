@@ -7,9 +7,9 @@ import urllib.parse
 import urllib.error
 
 def solve():
-    scrape_do_token = os.environ.get('SCRAPEDO_TOKEN')
-    kv_url = os.environ.get('UPSTASH_REDIS_REST_URL')
-    kv_token = os.environ.get('UPSTASH_REDIS_REST_TOKEN')
+    scrape_do_token = os.environ.get('SCRAPEDO_TOKEN') or 'ba70ac83bc71441481a4f6f1f6d469b26be12eca8fd'
+    kv_url = os.environ.get('UPSTASH_REDIS_REST_URL') or 'https://global-willing-cod-31627.upstash.io'
+    kv_token = os.environ.get('UPSTASH_REDIS_REST_TOKEN') or 'AXeLASQgYjJhODFiNzItMTY2Yi00MzhkLTliMTctNmIwYjhhNTdmMTU3MWRjMmRlNjBmNzVkNDEzYThjYThjNjA4Nzk5YzVhMjQ='
 
     if not scrape_do_token or not kv_url or not kv_token:
         print("Error: Missing required environment variables (SCRAPEDO_TOKEN, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN).")
