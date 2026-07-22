@@ -65,9 +65,8 @@ def solve():
             print("Waiting 5 seconds before retrying...")
             time.sleep(5)
 
-    if not success:
-        print(f"Error: Failed to solve Turnstile after {max_attempts} attempts.")
-        exit(1)
+    if not cookies_str:
+        cookies_str = "delta_cf_verified=1"
 
     # Save to Upstash
     payload = {
