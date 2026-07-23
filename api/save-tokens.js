@@ -1,6 +1,14 @@
 let localSavedCookie = null;
 let localSavedTime = 0;
-const LOCAL_COOKIE_TTL = 30 * 60 * 1000; // 30 minutes memory TTL
+
+function hasValidTurnstileToken(cookiesStr) {
+  if (!cookiesStr || !cookiesStr.includes('delta_cf_verified')) return false;
+  const match = cookiesStr.match(/delta_cf_verified=([^;\s]+)/);
+  if (match && match[1] && match[1].length > 25) {
+    return true;
+  }
+  return false;
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -35,12 +43,15 @@ module.exports = async function handler(req, res) {
     cookies = req.body.cookies;
   }
   
-  if (cookies && cookies.includes('delta_cf_verified')) {
-    localSavedCookie = cookies;
-    localSavedTime = Date.now();
-    global.GLOBAL_SYNCED_COOKIE = cookies;
-    global.GLOBAL_SYNCED_TIME = Date.now();
+  if (!hasValidTurnstileToken(cookies)) {
+    console.log("Ignoring request to save invalid/empty Turnstile cookie to prevent database corruption.");
+    return res.status(200).json({ success: false, message: "Invalid/Dummy cookie ignored, keeping active database cookies." });
   }
+
+  localSavedCookie = cookies;
+  localSavedTime = Date.now();
+  global.GLOBAL_SYNCED_COOKIE = cookies;
+  global.GLOBAL_SYNCED_TIME = Date.now();
 
   const payload = {
     cookies: cookies,
