@@ -29,12 +29,17 @@ module.exports = async function handler(req, res) {
         const ageMs = Date.now() - updatedAt;
         const ageMin = ageMs / 60000;
 
-        if (ageMin < 25) {
-          console.log(`Cron-solve skipped. Cookies are fresh (${ageMin.toFixed(1)} mins old).`);
+        // Also skip if cookie is already valid (not dummy), even if older
+        const existingCookie = obj?.cookies || '';
+        const match = existingCookie.match(/delta_cf_verified=([^;\s]+)/);
+        const isValidCookie = match && match[1] && match[1].length > 25;
+
+        if (ageMin < 25 || isValidCookie) {
+          console.log(`Cron-solve skipped. Cookies are ${isValidCookie ? 'VALID' : 'fresh'} (${ageMin.toFixed(1)} mins old).`);
           return res.status(200).json({
             success: true,
             skipped: true,
-            message: `Skipped solving. Cookies are fresh (age: ${ageMin.toFixed(1)} minutes).`
+            message: `Skipped solving. Cookies are ${isValidCookie ? 'valid' : 'fresh'} (age: ${ageMin.toFixed(1)} minutes).`
           });
         }
       }
@@ -93,6 +98,17 @@ module.exports = async function handler(req, res) {
         error: "Failed to capture delta_cf_verified cookie. Check Scrape.do logs.",
         parsedCookies: cookiesStr,
         headers: Object.fromEntries(response.headers.entries())
+      });
+    }
+
+    // CRITICAL: Reject dummy cookies from Scrape.do (it often returns delta_cf_verified=1)
+    const cfMatch = cookiesStr.match(/delta_cf_verified=([^;\s]+)/);
+    if (!cfMatch || !cfMatch[1] || cfMatch[1].length <= 25) {
+      console.log('Scrape.do returned a dummy/invalid cookie. Rejecting to protect valid DB cookie.');
+      return res.status(200).json({ 
+        success: false,
+        message: 'Scrape.do could not solve Turnstile (got dummy cookie). DB NOT updated — local solver cookie preserved.',
+        received: cookiesStr
       });
     }
 
