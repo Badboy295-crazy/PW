@@ -194,8 +194,13 @@ module.exports = async function handler(req, res) {
 
   // Override host + referer so origin thinks request came from target domain
   headers['host']    = targetHost;
-  headers['referer'] = `https://${targetHost}/`;
-  headers['origin']  = `https://${targetHost}`;
+  if (targetHost === 'apiserver.deltastudy.site') {
+    headers['referer'] = 'https://deltastudy.site/';
+    headers['origin']  = 'https://deltastudy.site';
+  } else {
+    headers['referer'] = `https://${targetHost}/`;
+    headers['origin']  = `https://${targetHost}`;
+  }
 
   if (targetHost === 'pipro.deltastudy.site') {
     headers['X-Delta-Friend-Key'] = 'pipro-only-lol';
