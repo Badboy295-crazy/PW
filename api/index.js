@@ -288,7 +288,7 @@ module.exports = async function handler(req, res) {
     // Forward Headers
     for (const [key, value] of Object.entries(proxyResData.headers)) {
       const lk = key.toLowerCase();
-      if (lk === 'transfer-encoding' || lk === 'connection' || lk === 'content-encoding') continue;
+      if (lk === 'transfer-encoding' || lk === 'connection' || lk === 'content-encoding' || lk.startsWith('access-control-')) continue;
       if (lk === 'location') {
         res.setHeader(key, value.replace(`https://${targetHost}`, ''));
       } else if (lk === 'cache-control' && isStaticOrPlay) {
