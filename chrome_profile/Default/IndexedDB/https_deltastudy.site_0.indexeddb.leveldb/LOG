@@ -1,0 +1,6 @@
+2026/07/23-16:52:54.161 4cac Creating DB C:\Users\amber\Desktop\Website Mirror\pw\chrome_profile\Default\IndexedDB\https_deltastudy.site_0.indexeddb.leveldb since it was missing.
+2026/07/23-16:52:54.166 4cac Reusing MANIFEST C:\Users\amber\Desktop\Website Mirror\pw\chrome_profile\Default\IndexedDB\https_deltastudy.site_0.indexeddb.leveldb/MANIFEST-000001
+2026/07/23-16:52:54.185 15e4 Level-0 table #5: started
+2026/07/23-16:52:54.189 15e4 Level-0 table #5: 1272 bytes OK
+2026/07/23-16:52:54.191 15e4 Delete type=0 #3
+2026/07/23-16:52:54.192 4cac Manual compaction at level-0 from '\x00\x01\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x02\x00\x00\x00' @ 0 : 0; will stop at (end)

@@ -203,7 +203,7 @@ module.exports = async function handler(req, res) {
 
   // Read cookies and admin IP from Upstash KV
   const kvUrl   = process.env.KV_REST_API_URL   || process.env.UPSTASH_REDIS_REST_URL   || 'https://global-willing-cod-31627.upstash.io';
-  const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || 'AXeLASQgYjJhODFiNzItMTY2Yi00MzhkLTliMTctNmIwYjhhNTdmMTU3MWRjMmRlNjBmNzVkNDEzYThjYThjNjA4Nzk5YzVhMjQ=';
+  const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || 'AXeLASQgYjJhODFiNzItMTY2Yi00MzhkLTliMTctNmIwYjhhNTdmMTU3MWRjMmRlNjBmNzVkNDEzYThjYThjNjA8Nzk5YzVhMjQ=';
 
   const isStaticOrPlay =
     pathname.startsWith('/play') ||
@@ -215,7 +215,11 @@ module.exports = async function handler(req, res) {
 
   let cookies = "";
 
-  if (!isStaticOrPlay && kvUrl && kvToken) {
+  if (global.GLOBAL_SYNCED_COOKIE && (Date.now() - (global.GLOBAL_SYNCED_TIME || 0) < 30 * 60 * 1000)) {
+    cookies = global.GLOBAL_SYNCED_COOKIE;
+  }
+
+  if (!cookies && !isStaticOrPlay && kvUrl && kvToken) {
     const now = Date.now();
     if (cachedCookies && (now - lastFetchTime < CACHE_TTL)) {
       cookies = cachedCookies;
@@ -243,7 +247,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  let activeCookie = cookies;
+  let activeCookie = cookies || global.GLOBAL_SYNCED_COOKIE;
   if (!activeCookie || !activeCookie.includes('delta_cf_verified') || activeCookie === 'delta_cf_verified=1') {
     activeCookie = await getFreshScrapeDoCookie();
   }
